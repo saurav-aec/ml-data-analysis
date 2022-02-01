@@ -1,0 +1,511 @@
+---
+title: "Malnutrition Data Analysis"
+author: "Saurav Banerjee"
+date: "6/23/2020"
+output:
+  html_document:
+    code_folding: hide
+    highlight: tango
+    toc: yes
+    toc_float:
+      collapsed: yes
+  pdf_document:
+    toc: yes
+always_allow_html: true
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plotly)
+library(grid)
+library(gridExtra)
+library(sampling)
+```
+
+# Introduction 
+
+The growth of human body largely depends on  amount of nutrients absorbed by the body. The balance of 
+proper nutrients allows the growth of bones and muscles which constitute the human body. Imbalance in nutrient absorption in
+human body can lead to a condition known as Malnutrition.
+
+As defined by World Health Organization -  
+
+> "Malnutrition refers to deficiencies, excesses, or imbalances in a person’s intake of energy and/or nutrients." 
+
+
+There are 3 broad groups of conditions, which address malnutrition. They are -  
+
+- Undernutrition - which includes:
+    - Wasting - Low weight-for-height
+    - Stunting - Low height-for-age
+    - Underweight - Low weight-for-age
+- Overweight, obesity and diet related noncommunicable diseases
+- Micro nutrient-related malnutrition which include lack of important vitamins and minerals, or 
+    micro nutrient excess.
+    
+Malnutrition puts children at greater risk of dying from common infections, increases the frequency and
+severity of such infections, and delays recovery.
+    
+# Malnutrition Data Set
+
+This analysis focuses on the Malnutrition amongst new born (age: upto 6 months), across the globe,
+between the years, 1989 to 2019. The analysis shows the various factors impacting undernutrition and obesity
+such as - demographics, income class, and overall population of a country.
+
+The dataset consists of country-wise numbers on undernutrition categories - Severe wasting, Wasting, Stunting,
+Underweight and Overweight. The dataset also provided an estimate sheet with year wise numbers on malnutrition,
+which were used for this analysis.
+
+### Data Cleanup  
+
+Few data columns contained null values, which has been removed before, the data was used for analysis.
+Also, the data columns were renamed for readability purposes.
+
+```{r data_setup, warning=FALSE, message=FALSE}
+estimates <- read_csv("malnutrition-estimates.csv")
+countrywise <- read_csv("country-wise-average.csv")
+colnames(estimates) <- c("Idx", "ISO", "Country",
+                         "SurveyYear",
+                         "Year","IncomeClass",
+                         "LCD", "LIFD",
+                         "LLDC|SID2","SurveySample",
+                         "SevereWasting", "Wasting",
+                         "Overweight", "Stunting", 
+                         "Underweight", "Notes",
+                         "Author", "Source", "ShortSource",
+                         "Population")
+colnames(countrywise) <- c("Country", "IncomeClass",
+                           "SevereWasting","Wasting",
+                           "Overweight", "Stunting",
+                           "Underweight","Population")
+INCOMECLASS <- c("Low Income", "Lower Middle Income", "Upper Middle Income", "High Income")
+```
+
+
+# Major types of malnutrition
+
+The below bar plot shows us the major cases of malnutrition types found amongst new born under 6 months age group,
+between years 1989 to 2019, throughout the globe. 
+
+```{r warning=FALSE}
+# World's avg malnutrition data of 5 months onld children
+avgWorldData <- c(mean(countrywise$SevereWasting, na.rm = TRUE),
+               mean(countrywise$Wasting, na.rm = TRUE),
+               mean(countrywise$Stunting, na.rm = TRUE),
+               mean(countrywise$Underweight, na.rm = TRUE))
+
+avgWorldDataPlot <- plot_ly(x = c("Severe Wasting", "Wasting", "Stunting", "Underweight"),
+                        y = avgWorldData, name = "AvgWorldData", type = "bar") %>%
+  layout(yaxis = list(title = "Percentage"),
+         xaxis = list(title = "Types of Undernutrition"),
+         title = "World Average Undernutrition Data (1989-2019)" )
+avgWorldDataPlot
+```
+
+### Observation
+Stunting is the most common type of malnutrition found in newborns, followed by underweight and wasting.
+
+# Malnutrition by Income Groups  
+
+The dataset provides us 4 income groups - High Income, Upper Middle Income, Lower Middle Income and Lower income groups respectively.
+In this section, we will see the impact of these income groups on types of Malnutrition.
+
+```{r}
+# World's Malnutrition by Income class - Severe Wasting
+swastingIC <- tibble(IncomeClass = INCOMECLASS[(countrywise$IncomeClass + 1)],
+                     swasting = countrywise$SevereWasting) %>%
+  drop_na()
+
+swastingICPlot <- plot_ly(swastingIC, type = "box", x = ~IncomeClass,
+                          y = ~swasting, color = I("orange")) %>%
+    layout(yaxis = list(title = "Percentage"),
+           xaxis = list(title = "Income groups", type = "category",
+                      categoryarray = INCOMECLASS, categoryorder = "array"),
+           title = "Severe Wasting by Income groups (1989-2019)" )
+swastingICPlot
+```
+
+We observe that, percentage of Severe Wasting is mostly found within Low and Lower Middle Income groups.
+We also, notice outliers in Low Income and Upper Middle Income data.
+
+```{r}
+# World's Malnutrition by Income class - Wasting
+#dataSet <- countrywise %>% arrange(IncomeClass) 
+wastingIC <- tibble(IncomeClass = INCOMECLASS[(countrywise$IncomeClass + 1)],
+                     wasting = countrywise$Wasting) %>%
+  drop_na()
+
+wastingICPlot <- plot_ly(wastingIC, type = "box", x = ~IncomeClass,
+                         y = ~wasting, color = I("purple3")) %>%
+  layout(yaxis = list(title = "Percentage"),
+         xaxis = list(title = "Income groups", type = "category",
+                      categoryarray = INCOMECLASS, categoryorder = "array"),
+         title = "Wasting by Income groups (1989-2019)" )
+wastingICPlot
+```
+
+Again, same as Severe Wasting, percentage of Wasting is mostly found within Low and Lower Middle Income groups.
+
+```{r}
+# World's Malnutrition by Income class - Stunting
+stuntingIC <- tibble(IncomeClass = INCOMECLASS[(countrywise$IncomeClass + 1)],
+                    stunting = countrywise$Stunting) %>%
+  drop_na()
+
+stuntICPlot <- plot_ly(stuntingIC, type = "box", x = ~IncomeClass,
+                       y = ~stunting, color = I("blue")) %>%
+  layout(yaxis = list(title = "Percentage"),
+         xaxis = list(title = "Income groups", type = "category",
+                      categoryarray = INCOMECLASS, categoryorder = "array"),
+         title = "Stunting by Income groups (1989-2019)" )
+stuntICPlot
+```
+
+Lower Income Groups have highest Stunting percentages.
+
+```{r}
+# World's Malnutrition by Income class - Underweight
+underweightIC <- tibble(IncomeClass = INCOMECLASS[(countrywise$IncomeClass + 1)],
+                     uweight = countrywise$Underweight) %>%
+  drop_na()
+
+uweightICPlot <- plot_ly(underweightIC, type = "box", x = ~IncomeClass,
+                         y = ~uweight, color = I("red")) %>%
+  layout(yaxis = list(title = "Percentage"),
+         xaxis = list(title = "Income groups", type = "category",
+                      categoryarray = INCOMECLASS, categoryorder = "array"),
+         title = "Underweight by Income groups (1989-2019)")
+uweightICPlot
+```
+
+Lower Income Groups and Lower Middle Income groups have higher Underweight percentages.
+We notice outliers in Upper Middle Income group data.
+
+### Observation
+World Population which fall in Low and Lower Income groups are more prone to Undernutrition symptoms.
+
+# Malnutrition Growth Rates 
+
+Now, we will analyze the growth of Stunting, Wasting and Underweight over the years between 2010 to 2019. The below plot shows 
+the data collected from the surveys from the estimates dataset.
+
+```{r message=FALSE}
+# Plot Malnutrition growth over years
+stunt <- (estimates %>%  group_by(Year) %>% summarise(mean = mean(Stunting))) %>% drop_na()
+Wasting <- (estimates %>%  group_by(Year) %>% summarise(mean = mean(Wasting)))  %>% drop_na()
+Underweight <- (estimates %>%  group_by(Year) %>% summarise(mean = mean(Underweight)))  %>% drop_na()
+
+years <- c(2010, 2011, 2012, 2013, 2018, 2019)
+
+stunt <- stunt[which(stunt$Year %in% years),]
+Wasting <- Wasting[which(Wasting$Year %in% years),]
+Underweight <- Underweight[which(Underweight$Year %in% years),]
+
+fig <- plot_ly(stunt, x = ~Year, y = ~mean, name = 'Stunting', type = 'scatter', mode = 'lines') 
+fig <- fig %>% add_trace(y = ~Wasting$mean, name = "Wasting") 
+fig <- fig %>% add_trace(y = ~Underweight$mean, name = "Underweight") %>%
+  layout(yaxis = list(title = "Percent Mean",
+                      range = c(1, 35), showline = TRUE),
+         xaxis = list(showline = TRUE),
+         title = "Malnutrition Growth (2010 - 2019)")
+fig
+```
+
+### Observation
+
+The time series graph shows us an overall decline in Malnutrition in the year 2012 and a sudden increase in 2013. Though, over the years,
+the percentages of Wasting and Underweight have gone down. But Stunting has shown a considerable increase of 1% in 2018-19 year survey.
+
+# Correlation among Malnutrition Types  
+
+Now, we take a view a comparison of the Malnutrition types - Severe Wasting, Wasting, Stunting, Underweight (U.Weight)
+and Overweight (O.Weight). The goal is to explore the coo relationships between these malnutrition types.
+```{r}
+# Malnutrition Types Splom plot
+axis = list(showline=FALSE,
+            zeroline=FALSE,
+            gridcolor='#ffff',
+            ticklen=5)
+
+fig <- countrywise %>%
+  plot_ly() 
+fig <- fig %>%
+  add_trace(
+    type = 'splom',
+    dimensions = list(
+      list(label='Severe\nWasting', values=~SevereWasting),
+      list(label='Wasting', values=~Wasting),
+      list(label='Stunting', values=~Stunting),
+      list(label='Un.Weight', values=~Underweight),
+      list(label='Ov.Weight', values=~Overweight)
+    ),
+    #text=~class, # Chnaging here
+    marker = list(
+      #color = as.integer(df$class),
+      #colorscale = pl_colorscale,
+      size = 7,
+      line = list(
+        width = 1,
+        color = 'rgb(230,230,230)'
+      )
+    )
+  ) 
+fig <- fig %>%
+  layout(
+    title= 'Malnutrition Types',
+    hovermode='closest',
+    dragmode= 'select',
+    plot_bgcolor='rgba(240,240,240, 0.95)',
+    xaxis=list(domain=NULL, showline=F, zeroline=F, gridcolor='#ffff', ticklen=5),
+    yaxis=list(domain=NULL, showline=F, zeroline=F, gridcolor='#ffff', ticklen=5),
+    xaxis2=axis,
+    xaxis3=axis,
+    xaxis4=axis,
+    xaxis5=axis,
+    yaxis2=axis,
+    yaxis3=axis,
+    yaxis4=axis,
+    yaxis5=axis,
+    margin()
+  )
+
+fig <- fig %>% style(diagonal = list(visible = F))
+
+fig
+```
+
+### Observation
+
+Based on the analysis on this dataset, we see a strong correlation between the following Malnutrition Types -  
+
+- Stunting  and Severe Wasting : New born who have lower heights-for-age suffer from lower weights-for-age.
+- Wasting and Underweight : New born who have lower heights-for-age also have lower than normal weights.
+- Wasting and Severe Wasting : They show a strong correlation indicating, high percentages of wasting can lead to
+    and higher percentages of severe wasting.
+
+
+
+# Distribution of Malnutrition Types  
+
+Now, we take a quick look over the distributions of the malnutrition types - Stunting, Wasting, UnderWeight and Overweight.
+
+```{r}
+# ggplots for the porbability distributions of mlnutrition types
+legendTxt <- paste("Mean =", round(mean(countrywise$Stunting, na.rm = TRUE),2),
+                     "\nSD =", round(sd(countrywise$Stunting, na.rm = TRUE),2), sep = " " )
+
+stuntPlot <- ggplot(countrywise, aes(x = Stunting)) + geom_histogram(aes(y = ..density..),
+                                          binwidth = 1, fill = "blue", color = "black",
+                                          na.rm = TRUE) + geom_density(alpha = 0.2, fill = "#FF6666", na.rm = TRUE)
+stuntPlot <- stuntPlot + ylim(0, 0.080) + xlim(0, 60) + geom_text( x = 50, y = 0.07, label = legendTxt, size = 5)
+stuntPlot <- stuntPlot + ylab("Density")
+
+
+legendTxt <- paste("Mean =", round(mean(countrywise$Underweight, na.rm = TRUE),2),
+                   "\nSD =", round(sd(countrywise$Underweight, na.rm = TRUE),2), sep = " " )
+uweightPlot <- ggplot(countrywise, aes(x = Underweight)) + geom_histogram(aes(y = ..density..),
+                                           binwidth = 1, fill = "red", color = "black",
+                                           na.rm = TRUE) + geom_density(alpha = 0.2, fill = "#FF6666", na.rm = TRUE)
+uweightPlot <- uweightPlot + ylim(0, 0.080) + xlim(0, 60) + geom_text( x = 50, y = 0.07, label = legendTxt, size = 5)
+uweightPlot <- uweightPlot + ylab("Density")
+
+
+legendTxt <- paste("Mean =", round(mean(countrywise$Wasting, na.rm = TRUE),2),
+                   "\nSD =", round(sd(countrywise$Wasting, na.rm = TRUE),2), sep = " " )
+wastingPlot = ggplot(countrywise, aes(x = Wasting)) + geom_histogram(aes(y = ..density..),
+                                     binwidth = 1, fill = "purple", color = "black",
+                                     na.rm = TRUE) + geom_density(alpha = 0.2, fill = "#FF6666", na.rm = TRUE)
+wastingPlot <- wastingPlot + ylim(0, 0.15) + xlim(0, 30) + geom_text( x = 25, y = 0.12, label = legendTxt, size = 5)
+wastingPlot <- wastingPlot + ylab("Density")
+
+
+legendTxt <- paste("Mean =", round(mean(countrywise$Overweight, na.rm = TRUE),2),
+                   "\nSD =", round(sd(countrywise$Overweight, na.rm = TRUE),2), sep = " " )
+oweightPlot <- ggplot(countrywise, aes(x = Overweight)) + geom_histogram(aes(y = ..density..),
+                                     binwidth = 1, fill = "orange", color = "black",
+                                     na.rm = TRUE) + geom_density(alpha = 0.2, fill = "#FF6666", na.rm = TRUE)
+oweightPlot <- oweightPlot + ylim(0, 0.15) + xlim(0, 30) + geom_text( x = 25, y = 0.12, label = legendTxt, size = 5)
+oweightPlot <- oweightPlot + ylab("Density")
+
+grid.arrange(grobs = list(stuntPlot,wastingPlot, uweightPlot, oweightPlot), nrow = 2, ncol = 2,
+             top = textGrob("Distributions of Malnutrition Types", gp = gpar(fontsize = 20)))
+
+
+```
+
+### Observations  
+
+Apart from Stunting, distributions for other 3 types of malnutrition are right skewed. 
+
+
+# Central Limit Theorem
+
+Now, we will draw 500 random samples, with replacement of sizes 10, 20, 30 and 40
+of the Stunting malnutrition type and plot their mean distributions.
+
+```{r warning=FALSE}
+set.seed(23452)
+getSamples <- function(sampleCount, sampleSize){
+  
+  data <- which(countrywise$Stunting != "NA")
+  sampleMeans <- numeric(sampleCount)
+  sampleMeanText <- numeric(sampleCount)
+  
+  for(i in seq(1:length(sampleMeans))){
+    sampleMeans[i] <- mean(sample(data, size = sampleSize, replace = TRUE))
+    sampleMeanText[i] <- paste("Mean", i, sep = " ")
+  }
+  
+  return(data.frame(sampleMeanText, sampleMeans ))
+}
+
+sample10 <- getSamples(500, 10)
+sample20 <- getSamples(500, 20)
+sample30 <- getSamples(500, 30)
+sample40 <- getSamples(500, 40)
+
+# Plot Sample10
+legendTxt <- paste("Samples = ", nrow(sample10), "\nSample Size =", 10,
+  "\nMean =", round(mean(sample10$sampleMeans),2),
+                   "\nSD =", round(sd(sample10$sampleMeans),2), sep = " " )
+
+plot10 <- ggplot(sample10, aes(x = sampleMeans)) + geom_histogram(aes(y = ..density..), binwidth = 10,
+                                                                 fill = "orange", color = "black") + xlab("Mean")
+plot10 <- plot10 + ylim(0, 0.060) + xlim(20, 140) + geom_text( x = 120, y = 0.04, label = legendTxt, size = 3)
+plot10 <- plot10 + ylab("Density")
+
+# Plot Sample20
+legendTxt <- paste("Samples = ", nrow(sample20), "\nSample Size =", 20,
+                   "\nMean =", round(mean(sample20$sampleMeans),2),
+                   "\nSD =", round(sd(sample20$sampleMeans),2), sep = " " )
+
+plot20 <- ggplot(sample20, aes(x = sampleMeans)) + geom_histogram(aes(y = ..density..), binwidth = 10,
+                                                                  fill = "orange", color = "black") + xlab("Mean")
+plot20 <- plot20 + ylim(0, 0.060) + xlim(20, 140) + geom_text( x = 120, y = 0.04, label = legendTxt, size = 3)
+plot20 <- plot20 + ylab("Density")
+
+# Plot Sample30
+legendTxt <- paste("Samples = ", nrow(sample30), "\nSample Size =", 30,
+                   "\nMean =", round(mean(sample30$sampleMeans),2),
+                   "\nSD =", round(sd(sample30$sampleMeans),2), sep = " " )
+
+plot30 <- ggplot(sample30, aes(x = sampleMeans)) + geom_histogram(aes(y = ..density..), binwidth = 10,
+                                                                  fill = "orange", color = "black") + xlab("Mean")
+plot30 <- plot30 + ylim(0, 0.060) + xlim(20, 140) + geom_text( x = 120, y = 0.04, label = legendTxt, size = 3)
+plot30 <- plot30 + ylab("Density")
+
+# Plot Sample40
+legendTxt <- paste("Samples = ", nrow(sample40), "\nSample Size =", 40,
+                   "\nMean =", round(mean(sample40$sampleMeans),2),
+                   "\nSD =", round(sd(sample40$sampleMeans),2), sep = " " )
+
+plot40 <- ggplot(sample40, aes(x = sampleMeans)) + geom_histogram(aes(y = ..density..), binwidth = 10,
+                                                                  fill = "orange", color = "black") + xlab("Mean")
+plot40 <- plot40 + ylim(0, 0.060) + xlim(20, 140) + geom_text( x = 120, y = 0.04, label = legendTxt, size = 3)
+plot40 <- plot40 + ylab("Density")
+
+
+
+grid.arrange(grobs = list(plot10, plot20, plot30, plot40),
+             nrow = 2, ncol = 2,
+             top = textGrob("Means of Stunt Malnutrition", gp = gpar(fontsize = 20)))
+```
+
+### Observation  
+As expected from Central Limit Theorem, as the sample size increases, the standard deviation reduces for sample sizes.
+We also observe the means of all the above distributions have not changed much. 
+
+# Sampling Methods  
+
+Now, we use sampling method - Simple Random Sampling, Systematic Sampling, Systematic Sampling with Inclusion probability and Stratified Sampling over the Stunting data, taking 20 samples from country data set. For Stratified sampling, we are using strata based on the Income Class.
+
+```{r message=FALSE, warning=FALSE}
+stuntingData <- countrywise$Stunting[!is.na(countrywise$Stunting)]
+givenData <- stuntingData
+
+set.seed(34562)
+# Original plot
+origPlot <- plot_ly(type = "box", y = givenData, name = "Original Data",
+                    boxpoints = "all", pointpos = 10, jitter = 0.1)
+
+# Simple Random Sample 
+# Initialize
+sampleSize = 20
+populationSize = length(givenData)
+# Sample
+sampleRef <- srswr(n = sampleSize, N = populationSize)
+sample <- givenData[sampleRef != 0]
+randomPlot <- plot_ly(type = "box", y = sample, name = "Simple Random",
+        boxpoints = "all", pointpos = 10, jitter = 0.1)
+
+set.seed(34562)
+# Systematic Sample
+# Initialize
+sampleSize = 20
+populationSize = length(givenData)
+k = ceiling(populationSize/sampleSize)
+# Select 1st item
+r <- sample(k, 1)
+# Sample
+sampleSystematic <- givenData[seq(r, by = k, length = sampleSize)]
+systematicPlot <- plot_ly(type = "box", y = sampleSystematic, name = "Systematic",
+                          boxpoints = "all", pointpos = 10, jitter = 0.1)
+
+# Systematic Sample - Inclusion Probabilities
+# Initialize
+sampleSize = 20
+populationSize = length(givenData)
+cleanDataSet <- countrywise[!is.na(countrywise$Stunting),]
+# Compute inclusion probability
+pik <- inclusionprobabilities(cleanDataSet$IncomeClass, sampleSize)
+
+# Sample
+s <-  UPsystematic(pik)
+sampleUPSystematicInc <- cleanDataSet[s != 0, ]
+systematicIPPlot <- plot_ly(type = "box", y = sampleUPSystematicInc$Stunting, name = "Systematic\nInc.P",
+                          boxpoints = "all", pointpos = 10, jitter = 0.1, width = 1000 )
+
+set.seed(34562)
+# Stratified Sample
+cleanDataSet <- countrywise[!is.na(countrywise$Stunting),]
+sampleSize = 20
+populationSize = nrow(cleanDataSet)
+# Sort data
+orderIdx <- order(cleanDataSet$Stunting)
+cleanDataSet <- cleanDataSet[orderIdx, ]
+# Stratifying by Income Class
+freq <- table(cleanDataSet$IncomeClass)
+# Compute weights
+weights <- floor(sampleSize * freq/sum(freq))
+weights <- as.vector(weights)
+weights[2] <- (weights[2] + 1)
+# Sample
+strata <- strata(data = cleanDataSet, stratanames = c("IncomeClass"),
+                 size = weights, method = "srswor", description = FALSE)
+sampleStrata <- getdata(cleanDataSet, strata)
+strataPlot <- plot_ly(type = "box", y = sampleStrata$Stunting, name = "Stratified\n(Income)",
+                      boxpoints = "all", pointpos = 10, jitter = 0.1)
+
+# Final plot
+subplot(origPlot, randomPlot, systematicPlot, systematicIPPlot, strataPlot,
+        shareX = TRUE, shareY = TRUE, nrows = 1, margin = 0.01) %>% 
+  layout(title = "Sampling Stunting Malnutrition (20 samples)",
+         yaxis = list( title = "Percentage"))
+```
+
+### Observation
+
+Based on the observation, we see the Stratified sampling has the closest distribution compared with the 
+original data distribution. Also, we see for Systematic Inclusion and Systematic Sampling techniques 
+returned lower medians as compared with the original data set.  
+
+
+# References and Citation  
+
+This Exploratory Data Analysis has been done based on the data set obtained from Kraggle website.  
+https://www.kaggle.com/ruchi798/malnutrition-across-the-globe
+
+Definitions of terms used in this analysis has been taken from WHO Fact Sheets  
+https://www.who.int/news-room/fact-sheets/detail/malnutrition
+

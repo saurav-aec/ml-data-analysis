@@ -1,0 +1,18 @@
+Hypothesis Testing on Stroke Dataset 
+--------------------------------------
+
+Data Set - https://www.kaggle.com/fedesoriano/strokeprediction-dataset
+
+Description - 
+------------
+Stroke data is compared against following attributes - 
+> BMI
+> Glucose Level
+> Residence Type (Urban/Rural)
+> Work Type (Private/Non-Private)
+
+Logistic Regression is performed to determine the impact of above 4 attributes on Occurance of Stroke.
+
+Statistical Testing methods used -
+---------------------------------
+Hypothesis Testing
