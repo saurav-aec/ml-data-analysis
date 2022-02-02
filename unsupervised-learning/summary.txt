@@ -1,0 +1,23 @@
+Unsupervised Learning from Chess Dataset
+----------------------------------------
+
+Data Set - http://archive.ics.uci.edu/ml/datasets/Chess+%28King-Rook+vs.+King%29
+
+Project Objective - 
+------------------
+The King-Rook-King dataset is used to predict the penultimate move of a chess game, 
+from the last move (as provided in the dataset) which leads to a win for white.
+
+A random heuristic - Area of triange formed by the 3 pieces, has been chosen
+to compute the heuristic.
+
+Machine Learning Algorithms used - 
+--------------------------------
+SVM, KNN, Random Forest
+
+Technology used -
+---------------
+Scikit Learn
+Pandas
+Numpy
+Seaborn
