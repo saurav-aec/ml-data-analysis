@@ -1,0 +1,25 @@
+Supervised Learning for Arthritis Prediction
+--------------------------------------------
+
+Data Set - https://www.cdc.gov/brfss/annual_data/annual_2018.html
+
+Description - 
+------------
+Feature seclection methods used - 
+> Feature Subset Correlation
+> One R Classifier
+> Pearson Coff. Correlation 
+> Gain Ratio 
+
+Classification Models used - 
+Naive Bayes
+Decision Tree
+Neural Network
+One R
+Random Forest
+KNN
+
+Tools used -
+-------------
+Weka
+Python
